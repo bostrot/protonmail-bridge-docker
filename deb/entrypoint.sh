@@ -50,6 +50,15 @@ else
     # Fake a terminal, so it does not quit because of EOF...
     rm -f faketty
     mkfifo faketty
-    cat faketty | protonmail-bridge --cli
+
+    # Keep faketty open
+    sleep infinity > faketty &
+
+    # Start bridge reading from faketty
+    protonmail-bridge --cli < faketty &
+
+    # Wait for the bridge to exit
+    wait $!
+    exit $?
 
 fi
