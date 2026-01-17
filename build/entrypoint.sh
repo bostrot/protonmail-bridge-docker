@@ -2,6 +2,12 @@
 
 set -ex
 
+# Workaround for stale gpg-agent socket causing auth failures on restart
+# Cleans up leftover sockets in the GPG home directory
+if [ -d /root/.gnupg ]; then
+    rm -f /root/.gnupg/S.gpg-agent*
+fi
+
 # Initialize
 if [[ $1 == init ]]; then
 
