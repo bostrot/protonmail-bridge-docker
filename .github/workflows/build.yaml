@@ -88,8 +88,13 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64/v8
-          - linux/arm/v7
           - linux/riscv64
+          # linux/arm/v7 is not buildable at the moment. The bridge pulls in
+          # go-libfido2, which is compiled on every Linux target
+          # (//go:build darwin || linux, with no opt-out tag) and declares a
+          # [1073741824]*C.char that does not fit in a 32-bit address space:
+          #   type [1073741824]*_Ctype_char larger than address space
+          # Re-add it once that dependency builds on 32-bit again.
     steps:
       - name: Checkout
         uses: actions/checkout@v4

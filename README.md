@@ -16,7 +16,9 @@ Images: `ghcr.io/bostrot/protonmail-bridge`
 
 There are two types of images.
  - `deb`: Images based on the official [.deb release](https://protonmail.com/bridge/install). It only supports the `amd64` architecture.
- - `build`: Images based on the [source code](https://github.com/ProtonMail/proton-bridge). It supports `amd64`, `arm64`, `arm/v7` and `riscv64`.
+ - `build`: Images based on the [source code](https://github.com/ProtonMail/proton-bridge). It supports `amd64`, `arm64` and `riscv64`.
+
+`arm/v7` is currently not built. Proton Bridge compiles `go-libfido2` on every Linux target, and it declares an array that does not fit in a 32-bit address space, so the build fails on any 32-bit architecture.
 
 tag | description
  -- | --
