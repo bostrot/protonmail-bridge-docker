@@ -11,6 +11,9 @@ jobs:
   mirror_gitee:
     name: Mirror to Gitee
     runs-on: ubuntu-latest
+    # The Gitee mirror and its deploy key only exist upstream; forks would fail
+    # this job on every push.
+    if: github.repository == 'shenxn/protonmail-bridge-docker'
     steps:
       - uses: actions/checkout@v2
         with:

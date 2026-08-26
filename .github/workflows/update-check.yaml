@@ -10,15 +10,73 @@ on:
       - .github/workflows/update-check.yaml
       - update-check.py
   schedule:
-  - cron: '0 0 * * *'  # runs everyday at midnight
+    - cron: '0 4 * * *'  # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the version bump, the tag and the release
+  actions: write    # dispatch the image builds afterwards
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@master
-      with:
-        token: ${{ secrets.PERSONAL_TOKEN }}
-    - name: Check Update
-      run: python3 update-check.py ${{ github.event_name == 'pull_request' }}
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for a new Proton Bridge release
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 update-check.py
+
+      - name: Commit and tag
+        id: release
+        if: steps.check.outputs.changed == 'true' && github.event_name != 'pull_request'
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          git config user.name 'Eric Trenkel'
+          git config user.email 'eric@bostrot.com'
+          git add VERSION deb/PACKAGE
+          git commit -m "Bump version to ${VERSION}"
+
+          # A tag may already exist if a previous run pushed the commit but
+          # then failed; re-tagging would abort the whole job.
+          if git ls-remote --exit-code --tags origin "refs/tags/${VERSION}" >/dev/null 2>&1; then
+            echo "Tag ${VERSION} already exists upstream, not re-tagging."
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+          else
+            git tag -a "${VERSION}" -m "Proton Bridge ${VERSION}"
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin --tags
+
+      - name: Create GitHub release
+        if: steps.release.outputs.tagged == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Tracks [Proton Bridge ${VERSION}](https://github.com/ProtonMail/proton-bridge/releases/tag/${VERSION})."
+            echo
+            echo "Images for this release are published as \`${VERSION}-build\` (built from source) and \`${VERSION}\` (repacked deb)."
+          } > "${RUNNER_TEMP}/notes.md"
+          gh release create "${VERSION}" --title "${VERSION}" --notes-file "${RUNNER_TEMP}/notes.md"
+
+      - name: Trigger image builds
+        if: steps.check.outputs.changed == 'true' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Pushes made with GITHUB_TOKEN deliberately do not trigger other
+          # workflows, so the builds have to be dispatched by hand.
+          gh workflow run build.yaml --ref "${GITHUB_REF_NAME}"
+          gh workflow run deb.yaml --ref "${GITHUB_REF_NAME}"
