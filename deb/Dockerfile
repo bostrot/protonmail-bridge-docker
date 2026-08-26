@@ -14,6 +14,8 @@ LABEL maintainer="Simon Felding <sife@adm.ku.dk>"
 
 EXPOSE 25/tcp
 EXPOSE 143/tcp
+EXPOSE 465/tcp
+EXPOSE 993/tcp
 
 WORKDIR /protonmail
 
@@ -22,7 +24,7 @@ COPY gpgparams entrypoint.sh PACKAGE /protonmail/
 COPY --from=build /protonmail.deb /tmp/protonmail.deb
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends /tmp/protonmail.deb socat pass libsecret-1-0 ca-certificates procps \
+    && apt-get install -y --no-install-recommends /tmp/protonmail.deb socat openssl pass libsecret-1-0 ca-certificates procps \
     && rm -rf /var/lib/apt/lists/*
 
 CMD ["bash", "/protonmail/entrypoint.sh"]

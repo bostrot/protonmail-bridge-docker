@@ -16,10 +16,12 @@ LABEL maintainer="Simon Felding <sife@adm.ku.dk>"
 
 EXPOSE 25/tcp
 EXPOSE 143/tcp
+EXPOSE 465/tcp
+EXPOSE 993/tcp
 
 # Install dependencies and protonmail bridge
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends socat pass libsecret-1-0 ca-certificates libfido2-1 libcbor0.10 \
+    && apt-get install -y --no-install-recommends socat openssl pass libsecret-1-0 ca-certificates libfido2-1 libcbor0.10 procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy bash scripts

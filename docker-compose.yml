@@ -1,11 +1,20 @@
-version: '2.1'
-
 services:
   protonmail-bridge:
-    image: shenxn/protonmail-bridge
+    image: ghcr.io/bostrot/protonmail-bridge:build
     ports:
-      - 1025:25/tcp
-      - 1143:143/tcp
+      # Encrypted (implicit TLS). Prefer these.
+      - 1465:465/tcp  # SMTPS
+      - 1993:993/tcp  # IMAPS
+      # Unencrypted unless the client negotiates STARTTLS. Kept for backwards
+      # compatibility; drop these two lines (and set BRIDGE_TLS_ONLY below) to
+      # guarantee that nothing can talk to the bridge in the clear.
+      - 1025:25/tcp   # SMTP + STARTTLS
+      - 1143:143/tcp  # IMAP + STARTTLS
+    environment:
+      # Names and addresses the TLS certificate should be valid for. Add the
+      # host clients actually use, e.g. DNS:mail.example.com or IP:192.168.1.10.
+      BRIDGE_TLS_SAN: DNS:localhost,DNS:protonmail-bridge,IP:127.0.0.1
+      # BRIDGE_TLS_ONLY: "true"
     restart: unless-stopped
     volumes:
       - protonmail:/root
