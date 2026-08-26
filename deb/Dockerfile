@@ -23,8 +23,11 @@ WORKDIR /protonmail
 COPY gpgparams entrypoint.sh PACKAGE /protonmail/
 COPY --from=build /protonmail.deb /tmp/protonmail.deb
 
+# libfido2-1 is not in the repacked package's dependency list, but the bridge
+# binary links against it and refuses to start without it. It pulls in libcbor
+# as well.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends /tmp/protonmail.deb socat openssl pass libsecret-1-0 ca-certificates procps \
+    && apt-get install -y --no-install-recommends /tmp/protonmail.deb socat openssl pass libsecret-1-0 ca-certificates procps libfido2-1 \
     && rm -rf /var/lib/apt/lists/*
 
 CMD ["bash", "/protonmail/entrypoint.sh"]
